@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-ucb-transporte-us-8794109"
+		},
+		"dw_sql_hospital_password": {
+			"value": ""
+		},
+		"dw_sql_hospital_properties_typeProperties_server": {
+			"value": "sql-ucb-server-hospital-8794109.database.windows.net"
+		},
+		"dw_sql_hospital_properties_typeProperties_database": {
+			"value": "dw_hospital"
+		},
+		"dw_sql_hospital_properties_typeProperties_userName": {
+			"value": "AaronHerbas"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

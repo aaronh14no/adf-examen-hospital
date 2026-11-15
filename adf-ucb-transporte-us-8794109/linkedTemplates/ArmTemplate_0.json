@@ -1,0 +1,1218 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Nombre de instancia de Data Factory",
+			"defaultValue": "adf-ucb-transporte-us-8794109"
+		},
+		"dw_sql_hospital_password": {
+			"type": "secureString",
+			"metadata": "Cadena protegida para \"password\"de \"dw_sql_hospital\""
+		},
+		"dw_sql_hospital_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "sql-ucb-server-hospital-8794109.database.windows.net"
+		},
+		"dw_sql_hospital_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "dw_hospital"
+		},
+		"dw_sql_hospital_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "AaronHerbas"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/dw_sql_hospital')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('dw_sql_hospital_properties_typeProperties_server')]",
+					"database": "[parameters('dw_sql_hospital_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('dw_sql_hospital_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('dw_sql_hospital_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_bronze_admissions')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dw_sql_hospital",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "admission_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "patient_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "admission_date",
+						"type": "nvarchar"
+					},
+					{
+						"name": "discharge_date",
+						"type": "nvarchar"
+					},
+					{
+						"name": "department",
+						"type": "nvarchar"
+					},
+					{
+						"name": "attending_doctor_id",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "bronze",
+					"table": "admissions"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_bronze_billing')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dw_sql_hospital",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "billing_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "admission_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "charge_type",
+						"type": "nvarchar"
+					},
+					{
+						"name": "amount",
+						"type": "nvarchar"
+					},
+					{
+						"name": "payment_status",
+						"type": "nvarchar"
+					},
+					{
+						"name": "payment_date",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "bronze",
+					"table": "billing"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_bronze_diagnoses')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dw_sql_hospital",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "diagnosis_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "admission_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "icd_code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "diagnosis_description",
+						"type": "nvarchar"
+					},
+					{
+						"name": "severity",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "bronze",
+					"table": "diagnoses"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_bronze_patients')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dw_sql_hospital",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "patient_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "full_name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "gender",
+						"type": "nvarchar"
+					},
+					{
+						"name": "date_of_birth",
+						"type": "nvarchar"
+					},
+					{
+						"name": "phone",
+						"type": "nvarchar"
+					},
+					{
+						"name": "email",
+						"type": "nvarchar"
+					},
+					{
+						"name": "address",
+						"type": "nvarchar"
+					},
+					{
+						"name": "insurance_provider",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "bronze",
+					"table": "patients"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_silver_admissions')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dw_sql_hospital",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "silver"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "admission_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "patient_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "admission_date",
+						"type": "date"
+					},
+					{
+						"name": "discharge_date",
+						"type": "date"
+					},
+					{
+						"name": "department",
+						"type": "nvarchar"
+					},
+					{
+						"name": "attending_doctor_id",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "admissions"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_silver_billing')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dw_sql_hospital",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "silver"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "billing_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "admission_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "charge_type",
+						"type": "varchar"
+					},
+					{
+						"name": "amount",
+						"type": "decimal",
+						"precision": 12,
+						"scale": 2
+					},
+					{
+						"name": "payment_status",
+						"type": "varchar"
+					},
+					{
+						"name": "payment_date",
+						"type": "date"
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "billing"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_silver_diagnoses')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dw_sql_hospital",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "silver"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "diagnosis_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "admission_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "icd_code",
+						"type": "varchar"
+					},
+					{
+						"name": "diagnosis_description",
+						"type": "nvarchar"
+					},
+					{
+						"name": "severity",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "diagnoses"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_silver_patients')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dw_sql_hospital",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "silver"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "patient_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "full_name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "gender",
+						"type": "varchar"
+					},
+					{
+						"name": "date_of_birth",
+						"type": "date"
+					},
+					{
+						"name": "phone",
+						"type": "varchar"
+					},
+					{
+						"name": "email",
+						"type": "varchar"
+					},
+					{
+						"name": "address",
+						"type": "nvarchar"
+					},
+					{
+						"name": "insurance_provider",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "patients"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_silver_patients')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "sql_bronze_patients",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "sql_silver_patients",
+								"type": "DatasetReference"
+							},
+							"name": "sink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "Filter"
+						},
+						{
+							"name": "aggregate1"
+						},
+						{
+							"name": "DerivedColumn3"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          patient_id as string,",
+						"          full_name as string,",
+						"          gender as string,",
+						"          date_of_birth as string,",
+						"          phone as string,",
+						"          email as string,",
+						"          address as string,",
+						"          insurance_provider as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(patient_id_i = toInteger(trim(patient_id)),",
+						"          full_name_c = initCap(regexReplace(trim(coalesce(full_name,'')),' +',' ')),",
+						"          gender_l = lower(trim(coalesce(gender,''))),",
+						"          dob_d = case(regexMatch(trim(coalesce(date_of_birth,'')),'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'), toDate(trim(coalesce(date_of_birth,'')),'yyyy-MM-dd'), regexMatch(trim(coalesce(date_of_birth,'')),'^[0-9]{2}/[0-9]{2}/[0-9]{4}$'), toDate(trim(coalesce(date_of_birth,'')),'MM/dd/yyyy'), regexMatch(trim(coalesce(date_of_birth,'')),'^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}$'), toDate(trim(coalesce(date_of_birth,'')),'dd-MMM-yyyy'), regexMatch(trim(coalesce(date_of_birth,'')),'^[A-Za-z]+ [0-9]{2}, [0-9]{4}$'), toDate(trim(coalesce(date_of_birth,'')),'MMMM dd, yyyy'), regexMatch(trim(coalesce(date_of_birth,'')),'^[0-9]{2}-[0-9]{2}-[0-9]{2}$'), toDate(concat(substring(trim(coalesce(date_of_birth,'')),1,6), iif(toInteger(substring(trim(coalesce(date_of_birth,'')),7,2))<=27,'20','19'), substring(trim(coalesce(date_of_birth,'')),7,2)),'MM-dd-yyyy'), toDate(toString(null()))),",
+						"          phone_digits = iif(length(regexReplace(coalesce(phone,''),'[^0-9]',''))==11 && startsWith(regexReplace(coalesce(phone,''),'[^0-9]',''),'1'), substring(regexReplace(coalesce(phone,''),'[^0-9]',''),2), regexReplace(coalesce(phone,''),'[^0-9]','')),",
+						"          email_l = lower(trim(replace(replace(lower(coalesce(email,'')),',','.'),'gmial','gmail'))),",
+						"          insurance_l = lower(regexReplace(coalesce(insurance_provider,''),'[^A-Za-z]','')),",
+						"          address_c = iif(length(trim(coalesce(address,'')))==0, toString(null()), trim(address))) ~> derivedColumn1",
+						"derivedColumn1 derive(gender_c = case(in(['m','male'], gender_l),'Male', in(['f','female'], gender_l),'Female', toString(null())),",
+						"          dob_c = iif(!isNull(dob_d) && dob_d >= toDate('1900-01-01') && dob_d <= currentDate(), dob_d, toDate(toString(null()))),",
+						"          phone_c = iif(length(phone_digits)==10, concat(substring(phone_digits,1,3),'-',substring(phone_digits,4,3),'-',substring(phone_digits,7,4)), toString(null())),",
+						"          email_c = iif(regexMatch(email_l,'^[a-z0-9._%+-]+@[a-z0-9.-]+[.][a-z]{2,}$'), email_l, toString(null())),",
+						"          insurance_c = case(startsWith(insurance_l,'medicaid'),'Medicaid', startsWith(insurance_l,'medicare'),'Medicare', startsWith(insurance_l,'cigna'),'Cigna', startsWith(insurance_l,'aetna'),'Aetna', startsWith(insurance_l,'bluecross'),'BlueCross', insurance_l=='uhc' || startsWith(insurance_l,'united'),'UnitedHealthcare', startsWith(insurance_l,'selfpay'),'Self Pay', toString(null()))) ~> derivedColumn2",
+						"derivedColumn2 filter(!isNull(patient_id_i) && length(full_name_c) > 0) ~> Filter",
+						"Filter aggregate(groupBy(patient_id_i),",
+						"     each(match(name!='patient_id_i'), $$ = first($$))) ~> aggregate1",
+						"aggregate1 select(mapColumn(",
+						"          patient_id = patient_id_i,",
+						"          full_name = full_name_c,",
+						"          gender = gender_c,",
+						"          date_of_birth = dob_c,",
+						"          phone = phone_c,",
+						"          email = email_c,",
+						"          address = address_c,",
+						"          insurance_provider = insurance_c",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> DerivedColumn3",
+						"DerivedColumn3 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          patient_id as integer,",
+						"          full_name as string,",
+						"          gender as string,",
+						"          date_of_birth as date,",
+						"          phone as string,",
+						"          email as string,",
+						"          address as string,",
+						"          insurance_provider as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM silver.billing','DELETE FROM silver.diagnoses','DELETE FROM silver.admissions','DELETE FROM silver.patients'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          patient_id,",
+						"          full_name,",
+						"          gender,",
+						"          date_of_birth,",
+						"          phone,",
+						"          email,",
+						"          address,",
+						"          insurance_provider",
+						"     )) ~> sink"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sql_bronze_patients')]",
+				"[concat(variables('factoryId'), '/datasets/sql_silver_patients')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_silver_admissions')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "sql_bronze_admissions",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_silver_patients",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "sql_silver_admissions",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "Filter"
+						},
+						{
+							"name": "aggregate2"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "Existe1"
+						},
+						{
+							"name": "select2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          admission_id as string,",
+						"          patient_id as string,",
+						"          admission_date as string,",
+						"          discharge_date as string,",
+						"          department as string,",
+						"          attending_doctor_id as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source(output(",
+						"          patient_id as integer,",
+						"          full_name as string,",
+						"          gender as string,",
+						"          date_of_birth as date,",
+						"          phone as string,",
+						"          email as string,",
+						"          address as string,",
+						"          insurance_provider as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source2",
+						"source1 derive(admission_id_i = toInteger(trim(admission_id)),",
+						"          patient_id_i = toInteger(trim(patient_id)),",
+						"          admission_date_d = case(regexMatch(trim(coalesce(admission_date,'')),'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'), toDate(trim(coalesce(admission_date,'')),'yyyy-MM-dd'), regexMatch(trim(coalesce(admission_date,'')),'^[0-9]{2}/[0-9]{2}/[0-9]{4}$'), toDate(trim(coalesce(admission_date,'')),'MM/dd/yyyy'), regexMatch(trim(coalesce(admission_date,'')),'^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}$'), toDate(trim(coalesce(admission_date,'')),'dd-MMM-yyyy'), regexMatch(trim(coalesce(admission_date,'')),'^[A-Za-z]+ [0-9]{2}, [0-9]{4}$'), toDate(trim(coalesce(admission_date,'')),'MMMM dd, yyyy'), regexMatch(trim(coalesce(admission_date,'')),'^[0-9]{2}-[0-9]{2}-[0-9]{2}$'), toDate(concat(substring(trim(coalesce(admission_date,'')),1,6), iif(toInteger(substring(trim(coalesce(admission_date,'')),7,2))<=27,'20','19'), substring(trim(coalesce(admission_date,'')),7,2)),'MM-dd-yyyy'), toDate(toString(null()))),",
+						"          discharge_date_d = case(regexMatch(trim(coalesce(discharge_date,'')),'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'), toDate(trim(coalesce(discharge_date,'')),'yyyy-MM-dd'), regexMatch(trim(coalesce(discharge_date,'')),'^[0-9]{2}/[0-9]{2}/[0-9]{4}$'), toDate(trim(coalesce(discharge_date,'')),'MM/dd/yyyy'), regexMatch(trim(coalesce(discharge_date,'')),'^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}$'), toDate(trim(coalesce(discharge_date,'')),'dd-MMM-yyyy'), regexMatch(trim(coalesce(discharge_date,'')),'^[A-Za-z]+ [0-9]{2}, [0-9]{4}$'), toDate(trim(coalesce(discharge_date,'')),'MMMM dd, yyyy'), regexMatch(trim(coalesce(discharge_date,'')),'^[0-9]{2}-[0-9]{2}-[0-9]{2}$'), toDate(concat(substring(trim(coalesce(discharge_date,'')),1,6), iif(toInteger(substring(trim(coalesce(discharge_date,'')),7,2))<=27,'20','19'), substring(trim(coalesce(discharge_date,'')),7,2)),'MM-dd-yyyy'), toDate(toString(null()))),",
+						"          dept_l = lower(regexReplace(coalesce(department,''),'[^A-Za-z]','')),",
+						"          doctor_id_i = toInteger(trim(attending_doctor_id))) ~> derivedColumn1",
+						"derivedColumn1 derive(department_c = case(startsWith(dept_l,'cardio'),'Cardiology', startsWith(dept_l,'onco'),'Oncology', startsWith(dept_l,'neuro') || startsWith(dept_l,'nuero'),'Neurology', startsWith(dept_l,'ortho'),'Orthopedics', dept_l=='er' || startsWith(dept_l,'emerg'),'Emergency', startsWith(dept_l,'ped') || startsWith(dept_l,'paed'),'Pediatrics', startsWith(dept_l,'gen'),'General Surgery', 'Unknown'),",
+						"          discharge_date_c = iif(!isNull(discharge_date_d) && !isNull(admission_date_d) && discharge_date_d < admission_date_d, toDate(toString(null())), discharge_date_d)) ~> derivedColumn2",
+						"derivedColumn2 filter(!isNull(admission_id_i) && !isNull(patient_id_i) && !isNull(admission_date_d) && !isNull(doctor_id_i)) ~> Filter",
+						"Filter aggregate(groupBy(admission_id_i),",
+						"     each(match(name!='admission_id_i'), $$ = first($$))) ~> aggregate2",
+						"source2 select(mapColumn(",
+						"          sp_patient_id = patient_id",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"aggregate2, select1 exists(patient_id_i == sp_patient_id,",
+						"     negate:false,",
+						"     broadcast: 'auto')~> Existe1",
+						"Existe1 select(mapColumn(",
+						"          admission_id = admission_id_i,",
+						"          patient_id = patient_id_i,",
+						"          admission_date = admission_date_d,",
+						"          discharge_date = discharge_date_c,",
+						"          department = department_c,",
+						"          attending_doctor_id = doctor_id_i",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"select2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          admission_id as integer,",
+						"          patient_id as integer,",
+						"          admission_date as date,",
+						"          discharge_date as date,",
+						"          department as string,",
+						"          attending_doctor_id as integer",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM silver.billing','DELETE FROM silver.diagnoses','DELETE FROM silver.admissions'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          admission_id,",
+						"          patient_id,",
+						"          admission_date,",
+						"          discharge_date,",
+						"          department,",
+						"          attending_doctor_id",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sql_bronze_admissions')]",
+				"[concat(variables('factoryId'), '/datasets/sql_silver_patients')]",
+				"[concat(variables('factoryId'), '/datasets/sql_silver_admissions')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_silver_diagnoses')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "sql_bronze_diagnoses",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_silver_admissions",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "sql_silver_diagnoses",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "Filter"
+						},
+						{
+							"name": "aggregate"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "Exist1"
+						},
+						{
+							"name": "select2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          diagnosis_id as string,",
+						"          admission_id as string,",
+						"          icd_code as string,",
+						"          diagnosis_description as string,",
+						"          severity as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source(output(",
+						"          admission_id as integer,",
+						"          patient_id as integer,",
+						"          admission_date as date,",
+						"          discharge_date as date,",
+						"          department as string,",
+						"          attending_doctor_id as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source2",
+						"source1 derive(diagnosis_id_i = toInteger(trim(diagnosis_id)),",
+						"          admission_id_i = toInteger(trim(admission_id)),",
+						"          icd_raw = upper(regexReplace(split(coalesce(icd_code,''),',')[1],'[^A-Za-z0-9]','')),",
+						"          description_c = iif(length(trim(coalesce(diagnosis_description,'')))==0, toString(null()), trim(diagnosis_description)),",
+						"          severity_c = case(lower(trim(coalesce(severity,'')))=='mild','Mild', lower(trim(coalesce(severity,'')))=='moderate','Moderate', lower(trim(coalesce(severity,'')))=='severe','Severe', lower(trim(coalesce(severity,'')))=='critical','Critical', toString(null()))) ~> derivedColumn1",
+						"derivedColumn1 derive(icd_c = iif(length(icd_raw)>3, concat(substring(icd_raw,1,3),'.',substring(icd_raw,4)), icd_raw)) ~> derivedColumn2",
+						"derivedColumn2 filter(!isNull(diagnosis_id_i) && !isNull(admission_id_i) && length(icd_c) > 0) ~> Filter",
+						"Filter aggregate(groupBy(diagnosis_id_i),",
+						"     each(match(name!='diagnosis_id_i'), $$ = first($$))) ~> aggregate",
+						"source2 select(mapColumn(",
+						"          sa_admission_id = admission_id",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"aggregate, select1 exists(admission_id_i == sa_admission_id,",
+						"     negate:false,",
+						"     broadcast: 'auto')~> Exist1",
+						"Exist1 select(mapColumn(",
+						"          diagnosis_id = diagnosis_id_i,",
+						"          admission_id = admission_id_i,",
+						"          icd_code = icd_c,",
+						"          diagnosis_description = description_c,",
+						"          severity = severity_c",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"select2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          diagnosis_id as integer,",
+						"          admission_id as integer,",
+						"          icd_code as string,",
+						"          diagnosis_description as string,",
+						"          severity as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM silver.diagnoses'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          diagnosis_id,",
+						"          admission_id,",
+						"          icd_code,",
+						"          diagnosis_description,",
+						"          severity",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sql_bronze_diagnoses')]",
+				"[concat(variables('factoryId'), '/datasets/sql_silver_admissions')]",
+				"[concat(variables('factoryId'), '/datasets/sql_silver_diagnoses')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_silver_billing')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "sql_bronze_billing",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_silver_admissions",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "sql_silver_billing",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "Filter"
+						},
+						{
+							"name": "aggregate"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "Exist1"
+						},
+						{
+							"name": "select2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          billing_id as string,",
+						"          admission_id as string,",
+						"          charge_type as string,",
+						"          amount as string,",
+						"          payment_status as string,",
+						"          payment_date as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source(output(",
+						"          admission_id as integer,",
+						"          patient_id as integer,",
+						"          admission_date as date,",
+						"          discharge_date as date,",
+						"          department as string,",
+						"          attending_doctor_id as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source2",
+						"source1 derive(billing_id_i = toInteger(trim(billing_id)),",
+						"          admission_id_i = toInteger(trim(admission_id)),",
+						"          charge_type_c = iif(length(trim(coalesce(charge_type,'')))==0, 'Unknown', initCap(trim(charge_type))),",
+						"          amount_s = regexReplace(upper(coalesce(amount,'')),'[^0-9.-]',''),",
+						"          status_l = lower(trim(coalesce(payment_status,''))),",
+						"          payment_date_d = case(regexMatch(trim(coalesce(payment_date,'')),'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'), toDate(trim(coalesce(payment_date,'')),'yyyy-MM-dd'), regexMatch(trim(coalesce(payment_date,'')),'^[0-9]{2}/[0-9]{2}/[0-9]{4}$'), toDate(trim(coalesce(payment_date,'')),'MM/dd/yyyy'), regexMatch(trim(coalesce(payment_date,'')),'^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}$'), toDate(trim(coalesce(payment_date,'')),'dd-MMM-yyyy'), regexMatch(trim(coalesce(payment_date,'')),'^[A-Za-z]+ [0-9]{2}, [0-9]{4}$'), toDate(trim(coalesce(payment_date,'')),'MMMM dd, yyyy'), regexMatch(trim(coalesce(payment_date,'')),'^[0-9]{2}-[0-9]{2}-[0-9]{2}$'), toDate(concat(substring(trim(coalesce(payment_date,'')),1,6), iif(toInteger(substring(trim(coalesce(payment_date,'')),7,2))<=27,'20','19'), substring(trim(coalesce(payment_date,'')),7,2)),'MM-dd-yyyy'), toDate(toString(null())))) ~> derivedColumn1",
+						"derivedColumn1 derive(amount_d = iif(length(amount_s)==0 || !regexMatch(amount_s,'^-?[0-9]+([.][0-9]+)?$'), toDecimal(toString(null()),12,2), toDecimal(abs(round(toDouble(amount_s),2)),12,2)),",
+						"          status_c = case(status_l=='paid','Paid', status_l=='unpaid','Unpaid', status_l=='pending','Pending', status_l=='overdue','Overdue', toString(null()))) ~> derivedColumn2",
+						"derivedColumn2 filter(!isNull(billing_id_i) && !isNull(admission_id_i) && !isNull(amount_d) && !isNull(status_c)) ~> Filter",
+						"Filter aggregate(groupBy(billing_id_i),",
+						"     each(match(name!='billing_id_i'), $$ = first($$))) ~> aggregate",
+						"source2 select(mapColumn(",
+						"          sa_admission_id = admission_id",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"aggregate, select1 exists(admission_id_i == sa_admission_id,",
+						"     negate:false,",
+						"     broadcast: 'auto')~> Exist1",
+						"Exist1 select(mapColumn(",
+						"          billing_id = billing_id_i,",
+						"          admission_id = admission_id_i,",
+						"          charge_type = charge_type_c,",
+						"          amount = amount_d,",
+						"          payment_status = status_c,",
+						"          payment_date = payment_date_d",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"select2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          billing_id as integer,",
+						"          admission_id as integer,",
+						"          charge_type as string,",
+						"          amount as decimal(12,2),",
+						"          payment_status as string,",
+						"          payment_date as date",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM silver.billing'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          billing_id,",
+						"          admission_id,",
+						"          charge_type,",
+						"          amount,",
+						"          payment_status,",
+						"          payment_date",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sql_bronze_billing')]",
+				"[concat(variables('factoryId'), '/datasets/sql_silver_admissions')]",
+				"[concat(variables('factoryId'), '/datasets/sql_silver_billing')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline_silver')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Script1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "df_silver_patients",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"sink": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Data flow2",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Data flow1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "df_silver_admissions",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"source2": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Data flow3",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Data flow2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "df_silver_diagnoses",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"source2": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Data flow4",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Data flow3",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "df_silver_billing",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"source2": {},
+									"sink1": {}
+								},
+								"linkedServiceParameters": {}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Script1",
+						"description": "",
+						"type": "Script",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "dw_sql_hospital",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "Query",
+									"text": "delete from silver.admissions\ndelete from silver.billing\ndelete from silver.diagnoses\ndelete from silver.patients"
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/df_silver_patients')]",
+				"[concat(variables('factoryId'), '/dataflows/df_silver_admissions')]",
+				"[concat(variables('factoryId'), '/dataflows/df_silver_diagnoses')]",
+				"[concat(variables('factoryId'), '/dataflows/df_silver_billing')]",
+				"[concat(variables('factoryId'), '/linkedServices/dw_sql_hospital')]"
+			]
+		}
+	]
+}
