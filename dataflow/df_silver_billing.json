@@ -1,0 +1,138 @@
+{
+	"name": "df_silver_billing",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "sql_bronze_billing",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				},
+				{
+					"dataset": {
+						"referenceName": "sql_silver_admissions",
+						"type": "DatasetReference"
+					},
+					"name": "source2"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "sql_silver_billing",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "Filter"
+				},
+				{
+					"name": "aggregate"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "Exist1"
+				},
+				{
+					"name": "select2"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          billing_id as string,",
+				"          admission_id as string,",
+				"          charge_type as string,",
+				"          amount as string,",
+				"          payment_status as string,",
+				"          payment_date as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source(output(",
+				"          admission_id as integer,",
+				"          patient_id as integer,",
+				"          admission_date as date,",
+				"          discharge_date as date,",
+				"          department as string,",
+				"          attending_doctor_id as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source2",
+				"source1 derive(billing_id_i = toInteger(trim(billing_id)),",
+				"          admission_id_i = toInteger(trim(admission_id)),",
+				"          charge_type_c = iif(length(trim(coalesce(charge_type,'')))==0, 'Unknown', initCap(trim(charge_type))),",
+				"          amount_s = regexReplace(upper(coalesce(amount,'')),'[^0-9.-]',''),",
+				"          status_l = lower(trim(coalesce(payment_status,''))),",
+				"          payment_date_d = case(regexMatch(trim(coalesce(payment_date,'')),'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'), toDate(trim(coalesce(payment_date,'')),'yyyy-MM-dd'), regexMatch(trim(coalesce(payment_date,'')),'^[0-9]{2}/[0-9]{2}/[0-9]{4}$'), toDate(trim(coalesce(payment_date,'')),'MM/dd/yyyy'), regexMatch(trim(coalesce(payment_date,'')),'^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}$'), toDate(trim(coalesce(payment_date,'')),'dd-MMM-yyyy'), regexMatch(trim(coalesce(payment_date,'')),'^[A-Za-z]+ [0-9]{2}, [0-9]{4}$'), toDate(trim(coalesce(payment_date,'')),'MMMM dd, yyyy'), regexMatch(trim(coalesce(payment_date,'')),'^[0-9]{2}-[0-9]{2}-[0-9]{2}$'), toDate(concat(substring(trim(coalesce(payment_date,'')),1,6), iif(toInteger(substring(trim(coalesce(payment_date,'')),7,2))<=27,'20','19'), substring(trim(coalesce(payment_date,'')),7,2)),'MM-dd-yyyy'), toDate(toString(null())))) ~> derivedColumn1",
+				"derivedColumn1 derive(amount_d = iif(length(amount_s)==0 || !regexMatch(amount_s,'^-?[0-9]+([.][0-9]+)?$'), toDecimal(toString(null()),12,2), toDecimal(abs(round(toDouble(amount_s),2)),12,2)),",
+				"          status_c = case(status_l=='paid','Paid', status_l=='unpaid','Unpaid', status_l=='pending','Pending', status_l=='overdue','Overdue', toString(null()))) ~> derivedColumn2",
+				"derivedColumn2 filter(!isNull(billing_id_i) && !isNull(admission_id_i) && !isNull(amount_d) && !isNull(status_c)) ~> Filter",
+				"Filter aggregate(groupBy(billing_id_i),",
+				"     each(match(name!='billing_id_i'), $$ = first($$))) ~> aggregate",
+				"source2 select(mapColumn(",
+				"          sa_admission_id = admission_id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"aggregate, select1 exists(admission_id_i == sa_admission_id,",
+				"     negate:false,",
+				"     broadcast: 'auto')~> Exist1",
+				"Exist1 select(mapColumn(",
+				"          billing_id = billing_id_i,",
+				"          admission_id = admission_id_i,",
+				"          charge_type = charge_type_c,",
+				"          amount = amount_d,",
+				"          payment_status = status_c,",
+				"          payment_date = payment_date_d",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          billing_id as integer,",
+				"          admission_id as integer,",
+				"          charge_type as string,",
+				"          amount as decimal(12,2),",
+				"          payment_status as string,",
+				"          payment_date as date",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     preSQLs:['DELETE FROM silver.billing'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          billing_id,",
+				"          admission_id,",
+				"          charge_type,",
+				"          amount,",
+				"          payment_status,",
+				"          payment_date",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
